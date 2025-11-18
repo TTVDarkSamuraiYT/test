@@ -330,15 +330,27 @@
 </main>
 
 <script>
-/* ===== CONFIG ===== */
-const DISCORD_WEBHOOK_URL =
- "https://discord.com/api/webhooks/1438824526942175429/CZT4o7kLEhnwxHGoT_YHb8vfTr33n-GO3lHL5A-fGDyAicyJ_BbMTeY04_JXTPIZWiFu";
+/* ===== CONFIG (from config.json) ===== */
+let DISCORD_WEBHOOK_URL = "";
+let SHEET_ID = "";
+let INVENTORY_SHEET_NAME = "";
+let COLORS_SHEET_NAME = "";
 
-const SHEET_ID = "11-9VxCZfMXiFpmEy2LUsmHtHlF8sIu_FuAX8oz-zQyE";
-const INVENTORY_SHEET_NAME = "Inventory";
-const COLORS_SHEET_NAME = "colors";
+async function loadConfig() {
+  const url = "config.json?ts=" + Date.now(); // cache-buster
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error("Could not load config.json");
+  }
+  const cfg = await res.json();
+  DISCORD_WEBHOOK_URL = cfg.discordWebhookUrl;
+  SHEET_ID = cfg.sheetId;
+  INVENTORY_SHEET_NAME = cfg.inventorySheetName;
+  COLORS_SHEET_NAME = cfg.colorsSheetName;
+  console.log("Loaded config:", cfg);
+}
 
-/* Default fallback data (overwritten by Sheets if load succeeds) */
+/* ===== Default data (overwritten by Sheets) ===== */
 const COLORS = [
   {id:"red",  name:"Red",  status:"Available"},
   {id:"black",name:"Black",status:"Available"},
@@ -353,7 +365,6 @@ const PREMADE_PRINTS = [
 let inventoryFromSheetsCount = -1;  // -1 = unknown, 0 = problem, >0 = OK
 
 /* ===== Helper functions ===== */
-
 function cleanCell(v){
   v = (v || "").trim();
   if (v.startsWith('"') && v.endsWith('"') && v.length >= 2) {
@@ -401,7 +412,7 @@ function parseCsv(text){
   return lines.map(line => line.split(",").map(cleanCell));
 }
 
-/* ===== Contact & phone formatting ===== */
+/* ===== Contact & phone helpers ===== */
 function looksLikeEmail(str){
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(str);
@@ -416,7 +427,6 @@ function isNonTrivialEmail(email){
 
   const bannedLocals = ["spam","fake","test","asdf","none","noemail","na"];
   if (bannedLocals.includes(local)) return false;
-
   if (domain.startsWith("example.")) return false;
 
   return true;
@@ -458,11 +468,9 @@ function isValidContact(str){
   if (looksLikeEmail(str)){
     return isNonTrivialEmail(str);
   }
-
   if (looksLikePhone(str)){
     return isNonTrivialPhone(str);
   }
-
   return false;
 }
 
@@ -513,9 +521,9 @@ const shippingInfoInput = document.getElementById("shipping-info");
 const customerNotes = document.getElementById("customer-notes");
 
 let orderItems = [];
-let expediteSpeed = "standard"; // "standard" | "fast" | "next-day"
+let expediteSpeed = "standard";
 
-/* Live formatting for phone input (but not email / letters) */
+/* Live formatting for phone input (but not email) */
 customerContact.addEventListener("input", () => {
   let val = customerContact.value;
   if (/[a-zA-Z@]/.test(val)) {
@@ -548,7 +556,7 @@ async function loadDataFromSheets(){
     const colorRows = parseCsv(colCsv);
     const newColors = [];
     for (let i = 1; i < colorRows.length; i++){
-      const [name, status, notes] = colorRows[i];
+      const [name, status] = colorRows[i];
       if (!name) continue;
       newColors.push({
         id: name.toLowerCase(),
@@ -573,7 +581,6 @@ async function loadDataFromSheets(){
       const status = statusRaw;
       const notes = notesRaw;
 
-      // Required: item name, price, status. Stock can be blank.
       if (!itemName || !priceStr || !status) continue;
 
       const price = parseFloat((priceStr || "").replace(/[^\d.]/g,"")) || 0;
@@ -601,7 +608,7 @@ async function loadDataFromSheets(){
     }
   } catch (err){
     console.error("Error loading Sheets data:", err);
-    inventoryFromSheetsCount = 0; // treat as problem
+    inventoryFromSheetsCount = 0;
   }
 }
 
@@ -609,8 +616,7 @@ async function loadDataFromSheets(){
 function renderColorsToSelect(){
   customColorSelect.innerHTML = "";
   COLORS.forEach(c => {
-    // Hide "Premade" from custom colors
-    if (c.id.toLowerCase() === "premade") return;
+    if (c.id.toLowerCase() === "premade") return; // hide Premade for custom
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.textContent = isColorAvailable(c.status) ? c.name : `${c.name} (${c.status || "Unavailable"})`;
@@ -690,7 +696,6 @@ function renderPremadeCards(){
     const colorSel = document.createElement("select");
 
     if (statusKind === "limited") {
-      // Limited items: only Premade option
       const opt = document.createElement("option");
       opt.value = "premade";
       opt.textContent = "Premade (pre-printed)";
@@ -831,7 +836,6 @@ function renderOrderSummary(){
         }
         item.qty += 1;
       } else {
-        // Do not allow going below 1; use Remove button to delete
         if (item.qty > 1) {
           item.qty -= 1;
         }
@@ -871,9 +875,7 @@ function calculateCustomPrice(){
   if (infill === "standard") mult *= 1.1;
   else if (infill === "solid") mult *= 1.25;
 
-  if (colorId === "premade") { // shouldn't happen for custom, but safe
-    mult *= 0.9;
-  }
+  if (colorId === "premade") { mult *= 0.9; }
 
   let priceEach = base * mult;
   priceEach = Math.max(5, Math.min(priceEach, 60));
@@ -900,13 +902,12 @@ function getItemsSubtotal(){
 function getShippingEstimate(){
   const method = shippingMethodSelect.value;
   if (method === "carrier_ground"){
-    // Ground shipping baseline
     let base = 9;
     if (expediteCheckbox.checked){
       if (expediteSpeed === "fast") {
-        base += 4;   // faster (2–3 day-ish)
+        base += 4;
       } else if (expediteSpeed === "next-day") {
-        base += 15;  // next-day style bump
+        base += 15;
       }
     }
     return base;
@@ -1149,7 +1150,6 @@ sendBtn.addEventListener("click", () => {
     body: fd
   }).finally(() => {
     alert("Order submitted");
-    // Clear cart & reset shipping/expedite
     orderItems = [];
     renderOrderSummary();
     shippingMethodSelect.value = "pickup";
@@ -1162,6 +1162,13 @@ sendBtn.addEventListener("click", () => {
 /* ===== Init ===== */
 async function init(){
   applySavedTheme();
+  try {
+    await loadConfig();
+  } catch (e) {
+    console.error(e);
+    alert("Config file (config.json) could not be loaded. Check your setup.");
+    return;
+  }
   await loadDataFromSheets();
   renderColorsToSelect();
   renderPremadeCards();
