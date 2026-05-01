@@ -1,6 +1,4 @@
-const API_BASE_URL = "https://ttvdarksamuraiyt.github.io/print-website-payment/";
-
-// Replace this with your real Stripe Price ID
+const API_BASE_URL = "https://print-website-payment.vercel.app";
 const TEST_PRICE_ID = "https://buy.stripe.com/9B628s4lV7G0fR7bO863K00";
 
 async function checkout(cart) {
