@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stripe Checkout Test</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Checkout Test</h1>
+    <p>This is a test product to verify Stripe Checkout + Vercel API.</p>
+
+    <div class="product">
+      <h2>Test 3D Print</h2>
+      <p>$5.00 test item</p>
+
+      <label>
+        Quantity:
+        <input id="qty" type="number" min="1" value="1" />
+      </label>
+    </div>
+
+    <button id="checkoutBtn">Checkout</button>
+
+    <p id="status"></p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
