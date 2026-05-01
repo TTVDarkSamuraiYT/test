@@ -15,7 +15,14 @@ async function checkout(cart) {
     body: JSON.stringify({ items })
   });
 
-  const data = await resp.json();
+  const text = await resp.text();
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("Server returned non-JSON: " + text.slice(0, 120));
+  }
 
   if (!resp.ok) {
     throw new Error(data.error || "Checkout request failed");
