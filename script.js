@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://print-website-payment-git-main-ashes1636-6342s-projects.vercel.app/";
+const API_BASE_URL = "print-website-payment.vercel.app";
 
 // Replace this with your real Stripe Price ID
 const TEST_PRICE_ID = "https://buy.stripe.com/9B628s4lV7G0fR7bO863K00";
