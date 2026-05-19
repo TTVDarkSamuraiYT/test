@@ -150,7 +150,6 @@ header {
   color: #e5e7eb;
 }
 
-/* teal-ish stock label */
 .premade-stock-label {
   display: inline-block;
   margin-top: 4px;
@@ -263,14 +262,13 @@ textarea {
   resize: vertical;
 }
 
-/* ---- PREMADE LIST: 3-COLUMN GRID ---- */
+/* ---- PREMADE LIST ---- */
 
 #premade-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 10px;
   margin-top: 8px;
-  /* IMPORTANT: no internal scrolling */
   max-height: none;
   overflow: visible;
 }
@@ -307,7 +305,6 @@ textarea {
   margin-bottom: 6px;
 }
 
-/* put right side controls below on small card */
 .premade-card > div:last-child {
   margin-top: 6px;
 }
@@ -531,6 +528,11 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Keeps preview popup hidden until a Preview button is clicked. */
+.modal-backdrop.hidden {
+  display: none !important;
 }
 
 @media (max-width: 600px) {
