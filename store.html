@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Print Store</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-black text-white p-4 shadow-lg">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">3D Print Store</h1>
+
+      <div class="flex gap-4">
+        <input
+          id="couponInput"
+          type="text"
+          placeholder="Coupon Code"
+          class="px-3 py-2 rounded text-black"
+        />
+
+        <button
+          onclick="applyCoupon()"
+          class="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+
+    <div id="couponBanner" class="hidden bg-green-200 text-green-900 p-4 rounded mb-6"></div>
+
+    <div
+      id="productsGrid"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+    ></div>
+
+  </main>
+
+  <script>
+    let products = [];
+    let coupons = [];
+    let activeDiscount = 0;
+
+    async function loadData() {
+      products = await fetch("./products.json").then(r => r.json());
+      coupons = await fetch("./coupons.json").then(r => r.json());
+
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById("productsGrid");
+
+      grid.innerHTML = "";
+
+      products.forEach(product => {
+        const discountedPrice =
+          product.price - (product.price * activeDiscount / 100);
+
+        grid.innerHTML += `
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+            <img
+              src="${product.image}"
+              class="w-full h-64 object-cover"
+            />
+
+            <div class="p-4">
+
+              <h2 class="text-xl font-bold mb-2">${product.name}</h2>
+
+              <p class="text-gray-600 mb-2">
+                ${product.description}
+              </p>
+
+              <p class="mb-1">
+                Filament:
+                <span class="font-semibold">
+                  ${product.filament}
+                </span>
+              </p>
+
+              <p class="mb-1">
+                Stock:
+                <span class="font-semibold">
+                  ${product.stock}
+                </span>
+              </p>
+
+              <div class="mt-4 flex items-center justify-between">
+
+                <div>
+                  ${
+                    activeDiscount > 0
+                    ? `
+                      <p class="text-sm line-through text-gray-400">
+                        $${product.price.toFixed(2)}
+                      </p>
+
+                      <p class="text-2xl font-bold text-green-600">
+                        $${discountedPrice.toFixed(2)}
+                      </p>
+                    `
+                    : `
+                      <p class="text-2xl font-bold">
+                        $${product.price.toFixed(2)}
+                      </p>
+                    `
+                  }
+                </div>
+
+                <button
+                  class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+                >
+                  Buy
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function applyCoupon() {
+      const code = document
+        .getElementById("couponInput")
+        .value
+        .trim()
+        .toUpperCase();
+
+      const found = coupons.find(c => c.code === code);
+
+      if (!found) {
+        alert("Invalid coupon");
+        return;
+      }
+
+      activeDiscount = found.discount;
+
+      document.getElementById("couponBanner").classList.remove("hidden");
+
+      document.getElementById("couponBanner").innerHTML =
+        `Coupon Applied: ${found.code} (${found.discount}% OFF)`;
+
+      renderProducts();
+    }
+
+    loadData();
+  </script>
+
+</body>
+</html>
