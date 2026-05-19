@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <div id="loginScreen" class="flex items-center justify-center h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-96">
+
+      <h1 class="text-3xl font-bold mb-6 text-center">
+        Admin Login
+      </h1>
+
+      <input
+        type="password"
+        id="passwordInput"
+        placeholder="Password"
+        class="w-full border p-3 rounded mb-4"
+      />
+
+      <button
+        onclick="login()"
+        class="w-full bg-black text-white py-3 rounded hover:bg-gray-800"
+      >
+        Login
+      </button>
+
+    </div>
+
+  </div>
+
+  <div id="adminPanel" class="hidden max-w-6xl mx-auto p-6">
+
+    <div class="flex justify-between items-center mb-8">
+
+      <h1 class="text-4xl font-bold">
+        Store Admin Panel
+      </h1>
+
+      <button
+        onclick="logout()"
+        class="bg-red-500 text-white px-4 py-2 rounded"
+      >
+        Logout
+      </button>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+
+      <h2 class="text-2xl font-bold mb-4">
+        Add Product
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <input id="name" placeholder="Name" class="border p-3 rounded"/>
+        <input id="price" placeholder="Price" type="number" class="border p-3 rounded"/>
+        <input id="stock" placeholder="Stock" type="number" class="border p-3 rounded"/>
+        <input id="filament" placeholder="Filament" class="border p-3 rounded"/>
+        <input id="image" placeholder="Image URL" class="border p-3 rounded"/>
+        <input id="description" placeholder="Description" class="border p-3 rounded"/>
+
+      </div>
+
+      <button
+        onclick="addProduct()"
+        class="mt-4 bg-black text-white px-6 py-3 rounded"
+      >
+        Add Product
+      </button>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+
+      <h2 class="text-2xl font-bold mb-4">
+        Products
+      </h2>
+
+      <div id="productsList"></div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = "changeme";
+
+    let products = [];
+
+    async function loadProducts() {
+      products = await fetch("./products.json").then(r => r.json());
+
+      renderProducts();
+    }
+
+    function login() {
+      const pass = document.getElementById("passwordInput").value;
+
+      if (pass !== ADMIN_PASSWORD) {
+        alert("Wrong password");
+        return;
+      }
+
+      localStorage.setItem("adminLoggedIn", "true");
+
+      showAdmin();
+    }
+
+    function logout() {
+      localStorage.removeItem("adminLoggedIn");
+
+      location.reload();
+    }
+
+    function showAdmin() {
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+
+      loadProducts();
+    }
+
+    function renderProducts() {
+      const list = document.getElementById("productsList");
+
+      list.innerHTML = "";
+
+      products.forEach((p, i) => {
+
+        list.innerHTML += `
+          <div class="border rounded-xl p-4 mb-4">
+
+            <div class="flex justify-between items-center">
+
+              <div>
+                <h3 class="text-xl font-bold">${p.name}</h3>
+
+                <p>Price: $${p.price}</p>
+                <p>Stock: ${p.stock}</p>
+                <p>Filament: ${p.filament}</p>
+              </div>
+
+              <button
+                onclick="deleteProduct(${i})"
+                class="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Delete
+              </button>
+
+            </div>
+
+          </div>
+        `;
+      });
+    }
+
+    function addProduct() {
+      const product = {
+        id: Date.now(),
+        name: document.getElementById("name").value,
+        price: parseFloat(document.getElementById("price").value),
+        stock: parseInt(document.getElementById("stock").value),
+        filament: document.getElementById("filament").value,
+        image: document.getElementById("image").value,
+        description: document.getElementById("description").value
+      };
+
+      products.push(product);
+
+      renderProducts();
+
+      alert(
+`Product added locally.
+
+Because GitHub Pages is static hosting,
+you must manually update products.json
+inside your GitHub repo.`
+      );
+
+      console.log(JSON.stringify(products, null, 2));
+    }
+
+    function deleteProduct(index) {
+      products.splice(index, 1);
+
+      renderProducts();
+
+      console.log(JSON.stringify(products, null, 2));
+    }
+
+    if (localStorage.getItem("adminLoggedIn") === "true") {
+      showAdmin();
+    }
+  </script>
+
+</body>
+</html>
