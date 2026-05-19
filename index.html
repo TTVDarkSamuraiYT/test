@@ -1,31 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stripe Checkout Test</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <main class="card">
-    <h1>Checkout Test</h1>
-    <p>This is a test product to verify Stripe Checkout + Vercel API.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tekniq Solutions – 3D Prints</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- use the prints stylesheet -->
+    <link rel="stylesheet" href="prints/style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="header-top">
+          <div>
+            <h1>Tekniq Solutions – 3D Printing Shop</h1>
+            <p>
+              Small one-person 3D printing shop. Premade designs, custom prints,
+              and simple order tracking.
+            </p>
+            <p class="helper-text small-header">
+              Thanks for supporting a tiny local maker. Website and systems are
+              still a work in progress, so things may look simple but everything
+              goes through me directly.
+            </p>
+          </div>
+        </div>
+      </header>
 
-    <div class="product">
-      <h2>Test 3D Print</h2>
-      <p>$5.00 test item</p>
+      <div class="grid">
+        <main class="left-column">
+          <section class="card">
+            <h2>Order prints</h2>
+            <p class="helper-text">
+              Browse premade items, see live stock, upload your own models, and
+              submit an order request.
+            </p>
+            <a href="prints/" class="btn btn-primary">Go to shop</a>
+          </section>
+        </main>
 
-      <label>
-        Quantity:
-        <input id="qty" type="number" min="1" value="1" />
-      </label>
+        <aside class="right-column">
+          <section class="card">
+            <h2>Track an order</h2>
+            <p class="helper-text">
+              Already placed an order? You can search by your order number or
+              contact info to check its status.
+            </p>
+            <a href="tracking/" class="btn btn-ghost">Track my order</a>
+          </section>
+        </aside>
+      </div>
     </div>
-
-    <button id="checkoutBtn">Checkout</button>
-
-    <p id="status"></p>
-  </main>
-
-  <script src="script.js"></script>
-</body>
+  </body>
 </html>
