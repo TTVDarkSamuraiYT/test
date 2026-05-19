@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tekniq Solutions – Order Tracking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #050816;
+        color: #f5f5f5;
+      }
+      .page {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      a.home-link {
+        color: #4ade80;
+        text-decoration: none;
+      }
+      a.home-link:hover {
+        text-decoration: underline;
+      }
+      .card {
+        background: #050b18;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+        border: 1px solid #111827;
+        margin-top: 12px;
+      }
+      .field-row {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 8px;
+      }
+      label {
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+      }
+      input[type="text"] {
+        background: #020617;
+        border-radius: 8px;
+        border: 1px solid #1e293b;
+        padding: 6px 8px;
+        color: #e5e7eb;
+        font-size: 0.9rem;
+      }
+      input::placeholder {
+        color: #6b7280;
+      }
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: #22c55e;
+        color: #022c22;
+      }
+      .btn-primary:hover {
+        background: #16a34a;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid #4b5563;
+        color: #e5e7eb;
+      }
+      .btn-ghost:hover {
+        background: #111827;
+      }
+      .helper-text {
+        font-size: 0.85rem;
+        color: #b3b3c7;
+        margin-top: 4px;
+      }
+      .error-text {
+        font-size: 0.85rem;
+        color: #fecaca;
+        margin-top: 4px;
+      }
+      .result {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 8px;
+        background: #020617;
+        border: 1px solid #1f2937;
+      }
+      .result h3 {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        background: #111827;
+        color: #e5e7eb;
+        margin-right: 4px;
+      }
+      .tag-priority {
+        background: #0f766e;
+        color: #ccfbf1;
+      }
+      .tag-rush {
+        background: #b91c1c;
+        color: #fee2e2;
+      }
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .track-link {
+        color: #38bdf8;
+        text-decoration: none;
+      }
+      .track-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="header-row">
+          <div>
+            <h1>Track your order</h1>
+            <p class="helper-text">
+              Track using your <strong>order number</strong> or your
+              <strong>contact</strong> (email or phone). Name is not used for
+              searching.
+            </p>
+          </div>
+          <a href="../prints/" class="btn btn-ghost">← Back to shop</a>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="field-row">
+          <label for="track-id">Order number</label>
+          <input
+            type="text"
+            id="track-id"
+            placeholder="e.g. 20251128-143522-001ab"
+          />
+        </div>
+
+        <div class="field-row">
+          <label for="track-contact">OR contact (email / phone)</label>
+          <input
+            type="text"
+            id="track-contact"
+            placeholder="Same contact you used when ordering"
+          />
+        </div>
+
+        <button id="track-btn" class="btn btn-primary">Find order</button>
+
+        <p id="track-message" class="helper-text"></p>
+
+        <div id="track-results"></div>
+      </section>
+    </div>
+
+    <script>
+      const CONFIG_PATH = "../config.json";
+      let TRACKING_WEBAPP_URL = "";
+
+      async function loadConfig() {
+        try {
+          const res = await fetch(CONFIG_PATH, { cache: "no-cache" });
+          if (!res.ok) throw new Error("config fetch failed");
+          const cfg = await res.json();
+          // fallback to STOCK_WEBAPP_URL so you don't need a separate entry
+          TRACKING_WEBAPP_URL =
+            cfg.TRACKING_WEBAPP_URL || cfg.STOCK_WEBAPP_URL || "";
+        } catch (err) {
+          console.error("Config error", err);
+        }
+      }
+
+      function setTrackMessage(msg, isError) {
+        const el = document.getElementById("track-message");
+        if (!el) return;
+        if (!msg) {
+          el.textContent = "";
+          el.className = "helper-text";
+          return;
+        }
+        el.textContent = msg;
+        el.className = isError ? "error-text" : "helper-text";
+      }
+
+      function renderResults(list) {
+        const wrap = document.getElementById("track-results");
+        wrap.innerHTML = "";
+        if (!list || !list.length) return;
+
+        list.forEach((row) => {
+          const div = document.createElement("div");
+          div.className = "result";
+
+          const h3 = document.createElement("h3");
+          h3.textContent = `Order #${row.orderId || "N/A"}`;
+          div.appendChild(h3);
+
+          const tags = document.createElement("div");
+          if (row.priority && row.priority.toLowerCase() !== "none") {
+            const t = document.createElement("span");
+            t.className =
+              "tag " +
+              (row.priority.toLowerCase() === "rush"
+                ? "tag-rush"
+                : "tag-priority");
+            t.textContent =
+              row.priority.charAt(0).toUpperCase() +
+              row.priority.slice(1).toLowerCase();
+            tags.appendChild(t);
+          }
+          if (row.status) {
+            const t = document.createElement("span");
+            t.className = "tag";
+            t.textContent = row.status;
+            tags.appendChild(t);
+          }
+          if (tags.childElementCount) {
+            div.appendChild(tags);
+          }
+
+          const p1 = document.createElement("p");
+          p1.className = "helper-text";
+          p1.textContent =
+            (row.name ? "Name: " + row.name + " • " : "") +
+            (row.contact ? "Contact: " + row.contact : "");
+          div.appendChild(p1);
+
+          // shipping / external tracking link from column E
+          if (row.shipping) {
+            const shipP = document.createElement("p");
+            shipP.className = "helper-text";
+
+            const val = String(row.shipping).trim();
+            if (/^https?:\/\//i.test(val)) {
+              const link = document.createElement("a");
+              link.href = val;
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              link.className = "track-link";
+              link.textContent = "Open tracking link";
+              shipP.textContent = "Tracking: ";
+              shipP.appendChild(link);
+            } else {
+              shipP.textContent = "Shipping / tracking: " + val;
+            }
+            div.appendChild(shipP);
+          }
+
+          if (row.notes) {
+            const p2 = document.createElement("p");
+            p2.className = "helper-text";
+            p2.textContent = "Notes: " + row.notes;
+            div.appendChild(p2);
+          }
+
+          wrap.appendChild(div);
+        });
+      }
+
+      async function handleTrack() {
+        const orderId = document.getElementById("track-id").value.trim();
+        const contact = document
+          .getElementById("track-contact")
+          .value.trim();
+
+        if (!orderId && !contact) {
+          setTrackMessage(
+            "Enter either your order number or your contact.",
+            true
+          );
+          return;
+        }
+
+        if (!TRACKING_WEBAPP_URL) {
+          setTrackMessage(
+            "Tracking is not configured yet. Please contact the shop owner.",
+            true
+          );
+          return;
+        }
+
+        setTrackMessage("Looking up your order…", false);
+        document.getElementById("track-results").innerHTML = "";
+
+        try {
+          const url =
+            TRACKING_WEBAPP_URL +
+            "?orderId=" +
+            encodeURIComponent(orderId) +
+            "&contact=" +
+            encodeURIComponent(contact);
+
+          const res = await fetch(url, { cache: "no-cache" });
+          if (!res.ok) throw new Error("request failed");
+          const data = await res.json();
+
+          if (!data.results || !data.results.length) {
+            setTrackMessage(
+              "No matching orders found. Double-check the order number or contact.",
+              true
+            );
+            return;
+          }
+
+          setTrackMessage(
+            data.results.length === 1
+              ? "Found 1 matching order."
+              : `Found ${data.results.length} matching orders.`,
+            false
+          );
+          renderResults(data.results);
+        } catch (err) {
+          console.error(err);
+          setTrackMessage(
+            "There was an error talking to the tracking service.",
+            true
+          );
+        }
+      }
+
+      async function initTracking() {
+        await loadConfig();
+        document
+          .getElementById("track-btn")
+          .addEventListener("click", (e) => {
+            e.preventDefault();
+            handleTrack();
+          });
+      }
+
+      window.addEventListener("DOMContentLoaded", initTracking);
+    </script>
+  </body>
+</html>
